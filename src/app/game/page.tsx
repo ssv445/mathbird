@@ -39,6 +39,8 @@ export default function GamePage() {
         const responseTime = Date.now() - startTime;
         const isCorrect = choice === question.correctAnswer;
 
+        const feedbackMessage = isCorrect ? 'Correct!' : getEncouragingFeedback(question);
+
         const newStreak = isCorrect ? gameState.currentStreak + 1 : 0;
         const newOperatorsUsed = new Set(gameState.uniqueOperatorsUsed).add(question.operator);
         const score = calculateScore(
@@ -67,7 +69,7 @@ export default function GamePage() {
 
         setGameState(newState);
         setFeedback({
-            message: isCorrect ? 'Correct!' : 'Try again!',
+            message: feedbackMessage,
             isCorrect
         });
 
@@ -150,15 +152,32 @@ export default function GamePage() {
                                 style={{ width: `${Math.min(100, accuracyNum)}%` }}
                             />
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">Need: 60%</div>
+                        <div className="text-xs text-gray-500 mt-1">Need: 60% for next level</div>
                     </div>
                 </div>
                 <div className="flex justify-between items-center text-sm text-gray-600 mt-2">
-                    <span>Session: {gameState.sessionQuestionsAnswered}/5</span>
+                    <span>Questions: {gameState.sessionQuestionsAnswered}/20</span>
                     <span>⭐ {gameState.stars}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                    <div
+                        className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${(gameState.sessionQuestionsAnswered / 20) * 100}%` }}
+                    />
                 </div>
             </div>
         );
+    };
+
+    const getEncouragingFeedback = (question: Question): string => {
+        const messages = [
+            `Almost! ${question.operand1} ${question.operator} ${question.operand2} = ${question.correctAnswer}`,
+            "You can do it! Try again!",
+            "Keep going! Practice makes perfect!",
+            "Not quite, but you&apos;re learning!",
+            "That&apos;s okay! Math takes time to master."
+        ];
+        return messages[Math.floor(Math.random() * messages.length)];
     };
 
     if (!gameState || !question) return <div>Loading...</div>;
@@ -239,21 +258,21 @@ export default function GamePage() {
                         <div className="bg-white p-8 rounded-lg text-center w-full max-w-sm">
                             <h2 className="text-2xl font-bold mb-4">Session Complete!</h2>
                             <p className="text-4xl mb-4">
-                                {'🌟'.repeat(sessionRewards.stars)}
+                                {'⭐'.repeat(sessionRewards.stars)}
                             </p>
                             <p className="mb-2">{sessionRewards.message}</p>
+                            <p className="mb-2 text-gray-600">Accuracy: {((gameState.sessionCorrectAnswers / gameState.sessionQuestionsAnswered) * 100).toFixed(1)}%</p>
+                            <p className="mb-2 text-gray-600">Level: {gameState.currentLevel}</p>
                             <p className="mb-6 text-gray-600">Session Score: {gameState.score}</p>
                             <button
-                                className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg"
+                                className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg hover:bg-blue-600 transition-colors"
                                 onClick={async () => {
                                     setSessionComplete(false);
                                     setSessionRewards(null);
-                                    const state = await getGameState();  // Get fresh state
-                                    setGameState(state);  // Update local state
-                                    generateNewQuestion(state.currentLevel, state.lastQuestionTypes);
+                                    generateNewQuestion(gameState.currentLevel, gameState.lastQuestionTypes);
                                 }}
                             >
-                                Start New Session
+                                Continue
                             </button>
                         </div>
                     </motion.div>
@@ -269,7 +288,7 @@ export default function GamePage() {
                             <h2 className="text-2xl font-bold mb-4">Level Up!</h2>
                             <p className="mb-4">You&apos;ve advanced to level {gameState.currentLevel + 1}</p>
                             <button
-                                className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg"
+                                className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg hover:bg-blue-600 transition-colors"
                                 onClick={() => {
                                     setIsLevelUp(false);
                                     generateNewQuestion(gameState.currentLevel + 1, gameState.lastQuestionTypes);

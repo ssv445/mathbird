@@ -8,13 +8,18 @@
 - **Math Topics:** Basic arithmetic (addition, subtraction, multiplication, division)
 - **Game Mode:**
   - Display a question with four answer choices
-  - Player selects an answer and gets immediate feedback (correct/wrong)
+  - Player taps an answer, gets instant feedback, and moves to the next question
   - Score is based on accuracy and speed
-  - Timer (optional) to encourage faster responses
-- **Level Progression:**
-  - Infinite levels, each containing 20 questions.
-  - Unlock new levels by achieving high accuracy and speed.
-  - Difficulty, variety, and complexity increase progressively.
+  - Simple progress bar shows how many questions are left in the session
+
+### Level Progression
+
+- **Infinite levels**, each containing **20 questions**
+- **Gradual difficulty increase:**
+  - Start with basic single-digit addition/subtraction
+  - Progress to harder problems based on accuracy
+  - If struggling, repeat similar questions instead of increasing difficulty
+- **No Level Selection:** Auto-unlock new difficulty levels
 
 ### Screens
 
@@ -28,7 +33,7 @@
 
 - **Offline Support:** Works fully offline
 - **Data Storage:** Player progress is stored locally on the device
-- **Mobile-First:** Optimized for smartphones with a simple, touch-friendly UI
+- **Mobile-First:** Optimized for touch-friendly play
 
 ---
 
@@ -44,25 +49,28 @@
 ### **2. Game Screen**
 
 - **Question Display:** Shows the current math question.
-- **Answer Choices (4 buttons):** Each button presents a multiple-choice answer.
-  - Clicking an answer provides immediate feedback (correct/wrong).
-- **Timer (Optional):** Displays time remaining per question.
-- **Score Display:** Shows the current score based on accuracy and speed.
-- **Next Question Button (Auto/Manual):** Moves to the next question.
+- **Answer Choices (4 large buttons):** Each button presents a multiple-choice answer.
+  - Clicking an answer provides **instant feedback (correct/wrong)**.
+  - **Correct Answer Feedback:** Confetti, stars, or happy face animation.
+  - **Wrong Answer Feedback:** Gentle shake or small bounce with _"Try Again!"_ message.
+- **Progress Bar:** Shows how many questions remain.
+- **Auto-Next Question:** Moves automatically after selecting an answer.
 
 ### **3. Level-Up Screen**
 
-- **Congratulatory Message:** Encourages the player for completing the session.
-- **Stars (Rewards):** Displays earned stars based on performance.
-- **Next Level Button:** Proceeds to the next session with higher difficulty.
-- **Retry Button:** Allows replaying the session if performance was low.
+- **Congratulatory Message:** Encourages the player after completing the session.
+- **Stars (Rewards):**
+  - 3 stars for **90%+ accuracy**
+  - 2 stars for **70-89% accuracy**
+  - 1 star for **below 70% accuracy**
+- **Next Level Button:** Proceeds to the next session.
+- **Retry Button:** Allows replaying the session without penalty.
 
 ### **4. Progress Screen**
 
 - **Completed Levels List:** Shows past session scores and stars earned.
 - **Accuracy Stats:** Displays the player’s correct answer percentage.
 - **Speed Stats:** Shows the average response time per question.
-- **Weak Area Highlight:** Indicates areas that need improvement.
 
 ### **5. Settings Screen (Optional)**
 
@@ -76,10 +84,10 @@
 
 ### Technology Stack
 
-- **Framework:** Next.js (no external libraries)
+- **Framework:** Next.js 15 with App Router
 - **Styling:** Tailwind CSS for all UI elements
-- **Routing:** Next.js pages (`/`, `/game`, `/level-up`, `/progress`, `/settings`)
-- **State Management:** Use React state and LocalStorage/IndexedDB for storing progress
+- **Routing:** Next.js App Router (`/`, `/game`, `/level-up`, `/progress`, `/settings`)
+- **State Management:** Use React state and LocalStorage for storing progress
 - **Performance:**
   - Optimize for fast loading and minimal re-renders
   - Use static export (`next export`) for full offline support
@@ -92,69 +100,72 @@
 - **Code Structure:**
   - Store all constants in a config file.
   - Read config values from `process.env.var_name`.
-  - Ensure all functions are unit testable.
   - Keep the code modular and simple.
 
 ---
 
-## 4. Game Logic Rules
+## 4. Simplified Game Logic Rules
 
 ### Question Generation
 
-- **Start Simple:** Begin with single-digit addition and subtraction.
+- **Start Easy:** Simple single-digit addition and subtraction.
 - **Adaptive Difficulty:**
-  - Increase difficulty if the player answers correctly multiple times in a row.
-  - Reduce difficulty if the player struggles with multiple incorrect answers.
-- **Question Variety:** Ensure questions are not repeated frequently.
-- **Session Structure:** Each game session contains exactly 20 questions.
-
-### Player Performance Tracking
-
-- **Accuracy Rate:** Track the percentage of correct answers.
-- **Speed Measurement:** Store response time for each question.
-- **Progress Analysis:** Identify weak areas (e.g., struggling with multiplication) and generate more questions in those categories.
-
-### Level Progression
-
-- **Infinite Levels:** The game never ends; players keep progressing to higher difficulty levels.
-- **Unlock Criteria:**
-  - Achieve an accuracy of at least 80% in the current level.
-  - Maintain an average response time under a set limit.
-  - Answer at least 10 questions correctly in the current session.
+  - If accuracy **≥ 80%**, increase difficulty.
+  - If accuracy **< 50%**, keep difficulty the same.
+- **Randomized Questions:** Prevent repetition.
+- **Fixed Session Size:** Each session has **20 questions**.
 
 ### Reward System
 
-- **Scoring Criteria:** Points awarded based on:
-  - **Accuracy:** More points for correct answers.
-  - **Speed:** Bonus points for fast responses.
-  - **Variety:** More points for answering different types of problems.
-  - **Complexity:** More challenging questions give higher points.
-- **Session Rewards:** At the end of every 20-question session:
-  - Players receive a **score** based on their performance.
-  - Players earn **stars** as a reward for achievements.
-  - Positive reinforcement messages encourage continued play.
+- **Stars & Encouragement:**
+  - **3 stars:** 90%+ accuracy.
+  - **2 stars:** 70-89% accuracy.
+  - **1 star:** Below 70% accuracy.
+- **Positive Reinforcement:** Confetti, happy faces, and motivational messages.
+- **No Game Over:** Kids can always retry without penalty.
+
+### Data Storage and Offline Play
+
+- **Local Storage:** Save game progress, accuracy stats, and question history on the device.
+- **Session Continuity:** Resume from the last played level automatically when reopening the game.
 
 ---
 
-## 5. Unit Testing Specifications
+## 5. Manual Testing Scenarios
 
-### **Game Logic**
+Instead of automated unit tests, junior testers should manually verify the following **20 test scenarios**:
 
-- Ensure questions are generated correctly.
-- Verify difficulty adapts based on player performance.
-- Test scoring system (accuracy, speed, variety, complexity).
-- Test
+### **Core Gameplay**
 
-### **State Management**
+1. Start a new game and answer all 20 questions.
+2. Verify correct answer feedback (animation, score increase).
+3. Verify incorrect answer feedback (shake, encouragement message).
+4. Ensure the next question loads automatically after selecting an answer.
+5. Confirm the game progresses to the level-up screen after 20 questions.
+6. Verify that earned stars reflect performance correctly.
 
-- Verify local storage persistence for player progress.
-- Ensure game session resumes correctly after closing/reopening.
+### **Progress & Data Handling**
 
-### **UI Components**
+7. Check that accuracy and speed stats update correctly.
+8. Restart the game and confirm past progress is saved.
+9. Close and reopen the game to ensure progress persists.
+10. Reset progress and confirm all stored data is cleared.
 
-- Test button clicks and navigation.
-- Validate animations (e.g., correct answer glow, level-up pop-ups).
-- Ensure answer selection provides immediate feedback (correct/wrong).
+### **User Interface & Experience**
+
+11. Ensure all buttons are tappable and responsive.
+12. Verify that text and numbers are easy to read.
+13. Check if the game works smoothly in both portrait and landscape mode.
+14. Test different screen sizes to ensure UI responsiveness.
+
+### **Performance & Edge Cases**
+
+15. Answer rapidly to check if the game handles quick taps properly.
+16. Simulate slow responses to verify if the game allows completion at any pace.
+17. Test offline mode—confirm that the game works without internet access.
+18. Fill local storage and see if the game still functions correctly.
+19. Simulate a phone call interruption and confirm the game resumes correctly.
+20. Try refreshing the page mid-session and verify progress is maintained.
 
 ---
 

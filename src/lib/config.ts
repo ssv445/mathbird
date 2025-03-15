@@ -1,6 +1,6 @@
 export const config = {
     session: {
-        questionsPerSession: Number(process.env.QUESTIONS_PER_SESSION || 5),
+        questionsPerSession: Number(process.env.QUESTIONS_PER_SESSION || 20),
     },
     levelUp: {
         minAccuracy: Number(process.env.MIN_ACCURACY_FOR_LEVEL_UP || 60),
@@ -17,14 +17,14 @@ export const config = {
     rewards: {
         perfect: {
             accuracy: Number(process.env.PERFECT_ACCURACY || 90),
-            time: Number(process.env.PERFECT_TIME || 3),
+            time: Number(process.env.PERFECT_TIME || 5),
         },
         great: {
-            accuracy: Number(process.env.GREAT_ACCURACY || 75),
-            time: Number(process.env.GREAT_TIME || 4),
+            accuracy: Number(process.env.GREAT_ACCURACY || 70),
+            time: Number(process.env.GREAT_TIME || 7),
         },
         good: {
-            accuracy: Number(process.env.GOOD_ACCURACY || 60),
+            accuracy: Number(process.env.GOOD_ACCURACY || 0),
         },
     },
     difficulty: {

@@ -20,11 +20,12 @@ const generateChoices = (correctAnswer: number, difficulty: Difficulty): number[
 };
 
 const selectOperator = (level: number, lastQuestions?: Operator[]): Operator => {
+    // Start with basic single-digit addition/subtraction
     const availableOperators: Operator[] = level <= 2
-        ? ['+']
-        : level <= config.operators.subtractionMinLevel
-            ? ['+', '-']
-            : ['+', '-', '×'];
+        ? ['+']  // Level 1-2: Only addition
+        : level <= 4
+            ? ['+', '-']  // Level 3-4: Addition and subtraction
+            : ['+', '-', '×'];  // Level 5+: All operators
 
     // If no last questions or empty array, return random operator
     if (!lastQuestions?.length) {
@@ -32,7 +33,7 @@ const selectOperator = (level: number, lastQuestions?: Operator[]): Operator => 
     }
 
     // Avoid repeating the same operator too frequently
-    const recentOperators = new Set(lastQuestions.slice(-3));
+    const recentOperators = new Set(lastQuestions.slice(-2));
     const preferredOperators = availableOperators.filter(op => !recentOperators.has(op));
 
     return preferredOperators.length > 0
@@ -44,8 +45,9 @@ export const generateQuestion = (level: number, lastQuestions?: Operator[]): Que
     const difficulty = Math.min(5, Math.ceil(level / 2)) as Difficulty;
     const operator = selectOperator(level, lastQuestions);
 
+    // Start with single-digit numbers for early levels
     const maxNumber = difficulty <= 2
-        ? config.difficulty.easy.maxNumber
+        ? 9  // Single digit for early levels
         : difficulty <= 3
             ? config.difficulty.medium.maxNumber
             : difficulty <= 4
@@ -55,22 +57,30 @@ export const generateQuestion = (level: number, lastQuestions?: Operator[]): Que
     let operand1: number, operand2: number, correctAnswer: number;
 
     do {
-        operand1 = generateNumber(1, maxNumber);
-        operand2 = generateNumber(1, maxNumber);
+        // For early levels (1-2), ensure single digit numbers
+        if (difficulty <= 2) {
+            operand1 = generateNumber(1, 9);
+            operand2 = generateNumber(1, 9);
+        } else {
+            operand1 = generateNumber(1, maxNumber);
+            operand2 = generateNumber(1, maxNumber);
+        }
 
         switch (operator) {
             case '+':
                 correctAnswer = operand1 + operand2;
                 break;
             case '-':
+                // Ensure no negative results
                 if (operand1 < operand2) {
                     [operand1, operand2] = [operand2, operand1];
                 }
                 correctAnswer = operand1 - operand2;
                 break;
             case '×':
-                operand1 = generateNumber(1, config.difficulty.multiplication.maxNumber);
-                operand2 = generateNumber(1, config.difficulty.multiplication.maxNumber);
+                // Keep multiplication tables manageable
+                operand1 = generateNumber(1, Math.min(12, maxNumber));
+                operand2 = generateNumber(1, Math.min(12, maxNumber));
                 correctAnswer = operand1 * operand2;
                 break;
             default:
@@ -114,13 +124,18 @@ export const shouldLevelUp = (state: GameState): boolean => {
     // Calculate session accuracy
     const sessionAccuracy = (state.sessionCorrectAnswers / state.sessionQuestionsAnswered) * 100;
 
-    // Level up if accuracy is at least 60% in a completed session
-    return sessionAccuracy >= config.levelUp.minAccuracy && state.sessionQuestionsAnswered === config.session.questionsPerSession;
+    // Level up if accuracy is at least 60% in a completed session (per spec)
+    return sessionAccuracy >= config.levelUp.minAccuracy &&
+        state.sessionQuestionsAnswered === config.session.questionsPerSession;
 };
 
 export const shouldReduceDifficulty = (state: GameState): boolean => {
+    // Only check difficulty reduction after at least 5 questions
+    if (state.sessionQuestionsAnswered < 5) return false;
+
     const accuracy = (state.sessionCorrectAnswers / state.sessionQuestionsAnswered) * 100;
-    return accuracy < config.levelUp.minAccuracyForReduction && state.sessionQuestionsAnswered >= config.session.questionsPerSession;
+    // Reduce difficulty if accuracy is below 40% (struggling)
+    return accuracy < config.levelUp.minAccuracyForReduction;
 };
 
 export const isSessionComplete = (questionsAnswered: number): boolean => {
@@ -129,22 +144,19 @@ export const isSessionComplete = (questionsAnswered: number): boolean => {
 
 export const calculateSessionRewards = (state: GameState): { stars: number; message: string } => {
     const accuracy = (state.sessionCorrectAnswers / state.sessionQuestionsAnswered) * 100;
-    const avgTime = state.averageResponseTime / 1000;
 
     let stars = 0;
     let message = '';
 
-    if (accuracy >= config.rewards.perfect.accuracy && avgTime < config.rewards.perfect.time) {
+    if (accuracy >= 90) {
         stars = 3;
-        message = 'Perfect! You\'re a math genius! 🌟🌟🌟';
-    } else if (accuracy >= config.rewards.great.accuracy && avgTime < config.rewards.great.time) {
+        message = 'Outstanding! You\'re a math genius! 🌟🌟🌟';
+    } else if (accuracy >= 70) {
         stars = 2;
         message = 'Great job! Keep it up! 🌟🌟';
-    } else if (accuracy >= config.rewards.good.accuracy) {
-        stars = 1;
-        message = 'Good work! Practice makes perfect! 🌟';
     } else {
-        message = 'Keep practicing! You\'ll get better! 💪';
+        stars = 1;
+        message = 'Good effort! Practice makes perfect! 🌟';
     }
 
     return { stars, message };
