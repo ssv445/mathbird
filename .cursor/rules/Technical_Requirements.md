@@ -12,3 +12,5 @@
 - **Mobile-First Approach:**
   - Design primarily for touchscreens
   - Avoid elements that require precise cursor control
+- **icons** Use react-icons library
+- Keep the app, well structured and modular to reuse components
