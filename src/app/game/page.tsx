@@ -77,7 +77,7 @@ export default function GamePage() {
             setSessionComplete(true);
 
             const shouldAdvanceLevel = shouldLevelUp(newState);
-            await updateGameState({
+            const updatedState = await updateGameState({
                 stars: gameState.stars + rewards.stars,
                 sessionQuestionsAnswered: 0,
                 sessionCorrectAnswers: 0,
@@ -89,6 +89,8 @@ export default function GamePage() {
                     currentLevel: gameState.currentLevel + 1,
                 } : {}),
             });
+
+            setGameState(updatedState);
 
             if (shouldAdvanceLevel) {
                 setIsLevelUp(true);
@@ -243,10 +245,12 @@ export default function GamePage() {
                             <p className="mb-6 text-gray-600">Session Score: {gameState.score}</p>
                             <button
                                 className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg"
-                                onClick={() => {
+                                onClick={async () => {
                                     setSessionComplete(false);
                                     setSessionRewards(null);
-                                    generateNewQuestion(gameState.currentLevel, gameState.lastQuestionTypes);
+                                    const state = await getGameState();  // Get fresh state
+                                    setGameState(state);  // Update local state
+                                    generateNewQuestion(state.currentLevel, state.lastQuestionTypes);
                                 }}
                             >
                                 Start New Session

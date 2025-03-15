@@ -1,4 +1,5 @@
 import { Question, Operator, Difficulty, GameState } from './types';
+import { config } from './config';
 
 const generateNumber = (min: number, max: number): number => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -21,7 +22,7 @@ const generateChoices = (correctAnswer: number, difficulty: Difficulty): number[
 const selectOperator = (level: number, lastQuestions?: Operator[]): Operator => {
     const availableOperators: Operator[] = level <= 2
         ? ['+']
-        : level <= 4
+        : level <= config.operators.subtractionMinLevel
             ? ['+', '-']
             : ['+', '-', '×'];
 
@@ -43,7 +44,14 @@ export const generateQuestion = (level: number, lastQuestions?: Operator[]): Que
     const difficulty = Math.min(5, Math.ceil(level / 2)) as Difficulty;
     const operator = selectOperator(level, lastQuestions);
 
-    const maxNumber = difficulty <= 2 ? 10 : difficulty <= 3 ? 20 : difficulty <= 4 ? 50 : 100;
+    const maxNumber = difficulty <= 2
+        ? config.difficulty.easy.maxNumber
+        : difficulty <= 3
+            ? config.difficulty.medium.maxNumber
+            : difficulty <= 4
+                ? config.difficulty.hard.maxNumber
+                : config.difficulty.expert.maxNumber;
+
     let operand1: number, operand2: number, correctAnswer: number;
 
     do {
@@ -61,8 +69,8 @@ export const generateQuestion = (level: number, lastQuestions?: Operator[]): Que
                 correctAnswer = operand1 - operand2;
                 break;
             case '×':
-                operand1 = generateNumber(1, 12);
-                operand2 = generateNumber(1, 12);
+                operand1 = generateNumber(1, config.difficulty.multiplication.maxNumber);
+                operand2 = generateNumber(1, config.difficulty.multiplication.maxNumber);
                 correctAnswer = operand1 * operand2;
                 break;
             default:
@@ -92,28 +100,31 @@ export const calculateScore = (
 ): number => {
     if (!isCorrect) return 0;
 
-    const baseScore = 10 * difficulty;
-    const timeBonus = Math.max(0, 5 - Math.floor(responseTime / 1000)) * 2;
-    const streakBonus = Math.floor(streak / 3) * 5;
-    const varietyBonus = uniqueOperatorsCount * 5;
+    const baseScore = config.scoring.baseMultiplier * difficulty;
+    const timeBonus = Math.max(0, config.scoring.timeBonusThreshold - Math.floor(responseTime / 1000))
+        * config.scoring.timeBonusPerSecond;
+    const streakBonus = Math.floor(streak / config.scoring.streakBonusInterval)
+        * config.scoring.streakBonusAmount;
+    const varietyBonus = uniqueOperatorsCount * config.scoring.varietyBonusPerOperator;
 
     return baseScore + timeBonus + streakBonus + varietyBonus;
 };
 
 export const shouldLevelUp = (state: GameState): boolean => {
-    const accuracy = (state.correctAnswers / state.questionsAnswered) * 100;
-    return accuracy >= 60 &&
-        state.averageResponseTime < 5000 &&
-        state.correctAnswers >= 10;
+    // Calculate session accuracy
+    const sessionAccuracy = (state.sessionCorrectAnswers / state.sessionQuestionsAnswered) * 100;
+
+    // Level up if accuracy is at least 60% in a completed session
+    return sessionAccuracy >= config.levelUp.minAccuracy && state.sessionQuestionsAnswered === config.session.questionsPerSession;
 };
 
 export const shouldReduceDifficulty = (state: GameState): boolean => {
-    const accuracy = (state.correctAnswers / state.questionsAnswered) * 100;
-    return accuracy < 40 && state.questionsAnswered >= 5;
+    const accuracy = (state.sessionCorrectAnswers / state.sessionQuestionsAnswered) * 100;
+    return accuracy < config.levelUp.minAccuracyForReduction && state.sessionQuestionsAnswered >= config.session.questionsPerSession;
 };
 
 export const isSessionComplete = (questionsAnswered: number): boolean => {
-    return questionsAnswered >= 5;
+    return questionsAnswered >= config.session.questionsPerSession;
 };
 
 export const calculateSessionRewards = (state: GameState): { stars: number; message: string } => {
@@ -123,13 +134,13 @@ export const calculateSessionRewards = (state: GameState): { stars: number; mess
     let stars = 0;
     let message = '';
 
-    if (accuracy >= 90 && avgTime < 3) {
+    if (accuracy >= config.rewards.perfect.accuracy && avgTime < config.rewards.perfect.time) {
         stars = 3;
         message = 'Perfect! You\'re a math genius! 🌟🌟🌟';
-    } else if (accuracy >= 75 && avgTime < 4) {
+    } else if (accuracy >= config.rewards.great.accuracy && avgTime < config.rewards.great.time) {
         stars = 2;
         message = 'Great job! Keep it up! 🌟🌟';
-    } else if (accuracy >= 60) {
+    } else if (accuracy >= config.rewards.good.accuracy) {
         stars = 1;
         message = 'Good work! Practice makes perfect! 🌟';
     } else {
