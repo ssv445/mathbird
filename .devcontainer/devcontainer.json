@@ -37,7 +37,8 @@
 	"portsAttributes": {
 		"3000": {
 			"label": "MathBirdApp",
-			"onAutoForward": "notify"
+			"onAutoForward": "notify",
+			"requireLocalPort": false
 		}
 	},
 	//https://www.kenmuse.com/blog/avoiding-dubious-ownership-in-dev-containers/
