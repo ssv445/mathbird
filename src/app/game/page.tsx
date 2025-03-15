@@ -67,12 +67,64 @@ export default function GamePage() {
         }
     };
 
+    const getProgressHints = () => {
+        if (!gameState) return null;
+
+        const accuracy = gameState.questionsAnswered > 0
+            ? ((gameState.correctAnswers / gameState.questionsAnswered) * 100).toFixed(1)
+            : '0';
+        const avgTime = (gameState.averageResponseTime / 1000).toFixed(1);
+        const accuracyNum = Number(accuracy);
+        const avgTimeNum = Number(avgTime);
+
+        return (
+            <div className="bg-white/90 rounded-lg p-4 mb-4 shadow-sm backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">Level {gameState.currentLevel} Goals:</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <div className="flex justify-between items-center">
+                            <span>Accuracy:</span>
+                            <span className={accuracyNum >= 80 ? 'text-green-500' : 'text-blue-500'}>
+                                {accuracy}%
+                            </span>
+                        </div>
+                        <div className="h-1 bg-gray-200 rounded-full mt-1">
+                            <div
+                                className={`h-full rounded-full ${accuracyNum >= 80 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                style={{ width: `${Math.min(100, accuracyNum)}%` }}
+                            />
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Need: 80%</div>
+                    </div>
+                    <div>
+                        <div className="flex justify-between items-center">
+                            <span>Avg Time:</span>
+                            <span className={avgTimeNum < 5 ? 'text-green-500' : 'text-blue-500'}>
+                                {avgTime}s
+                            </span>
+                        </div>
+                        <div className="h-1 bg-gray-200 rounded-full mt-1">
+                            <div
+                                className={`h-full rounded-full ${avgTimeNum < 5 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                style={{ width: `${Math.min(100, (avgTimeNum / 5) * 100)}%` }}
+                            />
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Need: &lt;5s</div>
+                    </div>
+                </div>
+                <div className="text-sm text-gray-600 mt-2">
+                    Questions: {gameState.questionsAnswered}/10
+                </div>
+            </div>
+        );
+    };
+
     if (!gameState || !question) return <div>Loading...</div>;
 
     return (
         <main className="min-h-screen bg-gradient-to-b from-blue-100 to-purple-100 p-4">
-            <div className="max-w-2xl mx-auto">
-                <div className="flex items-center justify-between mb-8">
+            <div className="max-w-2xl mx-auto h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
                     <Link
                         href="/"
                         className="flex items-center text-blue-600 hover:text-blue-700"
@@ -81,27 +133,29 @@ export default function GamePage() {
                         Back
                     </Link>
                     <div className="flex gap-4">
-                        <div className="text-lg font-medium">Level: {gameState.currentLevel}</div>
                         <div className="text-lg font-medium">Score: {gameState.score}</div>
                     </div>
                 </div>
 
+                {getProgressHints()}
+
+                <div className="flex-1" /> {/* Spacer */}
+
                 <div className="bg-white rounded-lg shadow-lg p-6">
-                    <div className="text-center mb-8">
-                        <div className="text-3xl font-bold mb-4">
-                            {question.operand1} {question.operator} {question.operand2} = ?
-                        </div>
-                        {feedback && (
-                            <motion.div
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className={`text-xl font-bold ${feedback.isCorrect ? 'text-green-500' : 'text-red-500'
-                                    }`}
-                            >
-                                {feedback.message}
-                            </motion.div>
-                        )}
+                    <div className="text-3xl font-bold text-center mb-6">
+                        {question.operand1} {question.operator} {question.operand2} = ?
                     </div>
+
+                    {feedback && (
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className={`text-xl font-bold text-center mb-4 ${feedback.isCorrect ? 'text-green-500' : 'text-red-500'
+                                }`}
+                        >
+                            {feedback.message}
+                        </motion.div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         {question.choices.map((choice, index) => (
@@ -109,11 +163,11 @@ export default function GamePage() {
                                 key={index}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className={`p-4 text-xl font-bold rounded-lg ${feedback
-                                    ? choice === question.correctAnswer
-                                        ? 'bg-green-500 text-white'
-                                        : 'bg-gray-100 text-gray-700'
-                                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                                className={`p-6 text-2xl font-bold rounded-lg ${feedback
+                                        ? choice === question.correctAnswer
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-gray-100 text-gray-700'
+                                        : 'bg-blue-500 text-white hover:bg-blue-600'
                                     }`}
                                 onClick={() => handleAnswer(choice)}
                                 disabled={!!feedback}
@@ -122,29 +176,29 @@ export default function GamePage() {
                             </motion.button>
                         ))}
                     </div>
-
-                    {isLevelUp && (
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="fixed inset-0 bg-black/50 flex items-center justify-center"
-                        >
-                            <div className="bg-white p-8 rounded-lg text-center">
-                                <h2 className="text-2xl font-bold mb-4">Level Up!</h2>
-                                <p className="mb-4">You&apos;ve advanced to level {gameState.currentLevel + 1}</p>
-                                <button
-                                    className="bg-blue-500 text-white px-6 py-2 rounded-lg"
-                                    onClick={() => {
-                                        setIsLevelUp(false);
-                                        generateNewQuestion(gameState.currentLevel + 1);
-                                    }}
-                                >
-                                    Continue
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
                 </div>
+
+                {isLevelUp && (
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+                    >
+                        <div className="bg-white p-8 rounded-lg text-center w-full max-w-sm">
+                            <h2 className="text-2xl font-bold mb-4">Level Up!</h2>
+                            <p className="mb-4">You&apos;ve advanced to level {gameState.currentLevel + 1}</p>
+                            <button
+                                className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg"
+                                onClick={() => {
+                                    setIsLevelUp(false);
+                                    generateNewQuestion(gameState.currentLevel + 1);
+                                }}
+                            >
+                                Continue
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
             </div>
         </main>
     );
