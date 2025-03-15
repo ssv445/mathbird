@@ -5,7 +5,7 @@
   - Increase difficulty if the player answers correctly multiple times in a row.
   - Reduce difficulty if the player struggles with multiple incorrect answers.
 - **Question Variety:** Ensure questions are not repeated frequently.
-- **Session Structure:** Each game session contains exactly 20 questions.
+- **Session Structure:** Each game session contains exactly 5 questions.
 
 ### Player Performance Tracking
 
@@ -18,7 +18,7 @@
 - **Infinite Levels:** The game never ends; players keep progressing to higher difficulty levels.
 - **Unlock Criteria:**
   - Achieve an accuracy of at least 60% in the current level.
-  - Maintain an average response time under a set limit.
+  - Maintain an average response time under 60 seconds a set limit. It reduced by
   - Answer at least 10 questions correctly in the current session.
 - **Penalty for Mistakes:** If accuracy drops below 40% in a level, reintroduce easier questions before progressing.
 

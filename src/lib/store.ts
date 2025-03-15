@@ -41,7 +41,8 @@ export const getGameState = async (): Promise<GameState> => {
     return state ? {
         ...state,
         lastQuestionTypes: Array.isArray(state.lastQuestionTypes) ? state.lastQuestionTypes : [],
-        uniqueOperatorsUsed: new Set(state.uniqueOperatorsUsed || [])
+        uniqueOperatorsUsed: new Set(state.uniqueOperatorsUsed || []),
+        lifetimeScore: state.lifetimeScore || 0
     } : initialState;
 };
 

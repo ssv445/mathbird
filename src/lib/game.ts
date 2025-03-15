@@ -113,7 +113,7 @@ export const shouldReduceDifficulty = (state: GameState): boolean => {
 };
 
 export const isSessionComplete = (questionsAnswered: number): boolean => {
-    return questionsAnswered >= 20;
+    return questionsAnswered >= 5;
 };
 
 export const calculateSessionRewards = (state: GameState): { stars: number; message: string } => {

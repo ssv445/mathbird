@@ -49,17 +49,18 @@ export default function GamePage() {
             newOperatorsUsed.size
         );
 
+        const newAverageResponseTime = gameState.sessionQuestionsAnswered === 0
+            ? responseTime
+            : (gameState.averageResponseTime * gameState.sessionQuestionsAnswered + responseTime) /
+            (gameState.sessionQuestionsAnswered + 1);
+
         const newState = await updateGameState({
             score: gameState.score + score,
-            questionsAnswered: gameState.questionsAnswered + 1,
-            correctAnswers: gameState.correctAnswers + (isCorrect ? 1 : 0),
-            averageResponseTime:
-                (gameState.averageResponseTime * gameState.questionsAnswered + responseTime) /
-                (gameState.questionsAnswered + 1),
-            currentStreak: newStreak,
-            maxStreak: Math.max(gameState.maxStreak, newStreak),
             sessionQuestionsAnswered: gameState.sessionQuestionsAnswered + 1,
             sessionCorrectAnswers: gameState.sessionCorrectAnswers + (isCorrect ? 1 : 0),
+            averageResponseTime: newAverageResponseTime,
+            currentStreak: newStreak,
+            maxStreak: Math.max(gameState.maxStreak, newStreak),
             uniqueOperatorsUsed: newOperatorsUsed,
             lastQuestionTypes: [...gameState.lastQuestionTypes, question.operator].slice(-5),
         });
@@ -74,20 +75,32 @@ export default function GamePage() {
             const rewards = calculateSessionRewards(newState);
             setSessionRewards(rewards);
             setSessionComplete(true);
+
+            const shouldAdvanceLevel = shouldLevelUp(newState);
             await updateGameState({
                 stars: gameState.stars + rewards.stars,
                 sessionQuestionsAnswered: 0,
                 sessionCorrectAnswers: 0,
                 uniqueOperatorsUsed: new Set([]),
                 lifetimeScore: gameState.lifetimeScore + gameState.score,
-                score: 0,  // Reset session score
+                score: 0,
+                averageResponseTime: 0,
+                ...(shouldAdvanceLevel ? {
+                    currentLevel: gameState.currentLevel + 1,
+                } : {}),
             });
-        } else if (shouldLevelUp(newState)) {
-            setIsLevelUp(true);
-            await updateGameState({ currentLevel: gameState.currentLevel + 1 });
+
+            if (shouldAdvanceLevel) {
+                setIsLevelUp(true);
+            }
         } else if (shouldReduceDifficulty(newState)) {
             const newLevel = Math.max(1, gameState.currentLevel - 1);
-            await updateGameState({ currentLevel: newLevel });
+            await updateGameState({
+                currentLevel: newLevel,
+                sessionQuestionsAnswered: 0,
+                sessionCorrectAnswers: 0,
+                averageResponseTime: 0,
+            });
             setTimeout(() => {
                 generateNewQuestion(newLevel, newState.lastQuestionTypes);
             }, 1500);
@@ -113,17 +126,15 @@ export default function GamePage() {
     const getProgressHints = () => {
         if (!gameState) return null;
 
-        const accuracy = gameState.questionsAnswered > 0
-            ? ((gameState.correctAnswers / gameState.questionsAnswered) * 100).toFixed(1)
+        const accuracy = gameState.sessionQuestionsAnswered > 0
+            ? ((gameState.sessionCorrectAnswers / gameState.sessionQuestionsAnswered) * 100).toFixed(1)
             : '0';
-        const avgTime = (gameState.averageResponseTime / 1000).toFixed(1);
         const accuracyNum = Number(accuracy);
-        const avgTimeNum = Number(avgTime);
 
         return (
             <div className="bg-white/90 rounded-lg p-4 mb-4 shadow-sm backdrop-blur-sm">
-                <h3 className="text-lg font-semibold mb-2 text-gray-800">Level {gameState.currentLevel} Goals:</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">Level {gameState.currentLevel}</h3>
+                <div className="text-sm">
                     <div>
                         <div className="flex justify-between items-center">
                             <span>Accuracy:</span>
@@ -139,24 +150,9 @@ export default function GamePage() {
                         </div>
                         <div className="text-xs text-gray-500 mt-1">Need: 60%</div>
                     </div>
-                    <div>
-                        <div className="flex justify-between items-center">
-                            <span>Avg Time:</span>
-                            <span className={avgTimeNum < 5 ? 'text-green-500' : 'text-blue-500'}>
-                                {avgTime}s
-                            </span>
-                        </div>
-                        <div className="h-1 bg-gray-200 rounded-full mt-1">
-                            <div
-                                className={`h-full rounded-full ${avgTimeNum < 5 ? 'bg-green-500' : 'bg-blue-500'}`}
-                                style={{ width: `${Math.min(100, (avgTimeNum / 5) * 100)}%` }}
-                            />
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">Need: &lt;5s</div>
-                    </div>
                 </div>
                 <div className="flex justify-between items-center text-sm text-gray-600 mt-2">
-                    <span>Session: {gameState.sessionQuestionsAnswered}/20</span>
+                    <span>Session: {gameState.sessionQuestionsAnswered}/5</span>
                     <span>⭐ {gameState.stars}</span>
                 </div>
             </div>
