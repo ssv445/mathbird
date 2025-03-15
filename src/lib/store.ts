@@ -7,11 +7,17 @@ const STORE_NAME = 'gameState';
 const initialState: GameState = {
     currentLevel: 1,
     score: 0,
+    lifetimeScore: 0,
     questionsAnswered: 0,
     correctAnswers: 0,
     averageResponseTime: 0,
     currentStreak: 0,
     maxStreak: 0,
+    sessionQuestionsAnswered: 0,
+    sessionCorrectAnswers: 0,
+    uniqueOperatorsUsed: new Set([]),
+    stars: 0,
+    lastQuestionTypes: [],
 };
 
 let db: IDBPDatabase | null = null;
@@ -32,7 +38,11 @@ export const initDB = async () => {
 export const getGameState = async (): Promise<GameState> => {
     const db = await initDB();
     const state = await db.get(STORE_NAME, 'current');
-    return state || initialState;
+    return state ? {
+        ...state,
+        lastQuestionTypes: Array.isArray(state.lastQuestionTypes) ? state.lastQuestionTypes : [],
+        uniqueOperatorsUsed: new Set(state.uniqueOperatorsUsed || [])
+    } : initialState;
 };
 
 export const updateGameState = async (state: Partial<GameState>): Promise<GameState> => {

@@ -14,9 +14,15 @@ export interface Question {
 export interface GameState {
     currentLevel: number;
     score: number;
+    lifetimeScore: number;  // Total score across all sessions
     questionsAnswered: number;
     correctAnswers: number;
     averageResponseTime: number;
     currentStreak: number;
     maxStreak: number;
+    sessionQuestionsAnswered: number;
+    sessionCorrectAnswers: number;
+    uniqueOperatorsUsed: Set<Operator>;
+    stars: number;
+    lastQuestionTypes: Operator[];  // Track recent questions for variety
 } 

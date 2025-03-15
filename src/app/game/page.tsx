@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { Question, GameState } from '@/lib/types';
-import { generateQuestion, calculateScore, shouldLevelUp } from '@/lib/game';
-import { getGameState, updateGameState } from '@/lib/store';
+import { ArrowLeftIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { Question, GameState, Operator } from '@/lib/types';
+import { generateQuestion, calculateScore, shouldLevelUp, shouldReduceDifficulty, isSessionComplete, calculateSessionRewards } from '@/lib/game';
+import { getGameState, updateGameState, resetGameState } from '@/lib/store';
 import { motion } from 'framer-motion';
 
 export default function GamePage() {
@@ -14,18 +14,20 @@ export default function GamePage() {
     const [startTime, setStartTime] = useState<number>(0);
     const [feedback, setFeedback] = useState<{ message: string; isCorrect: boolean } | null>(null);
     const [isLevelUp, setIsLevelUp] = useState(false);
+    const [sessionComplete, setSessionComplete] = useState(false);
+    const [sessionRewards, setSessionRewards] = useState<{ stars: number; message: string } | null>(null);
 
     useEffect(() => {
         const init = async () => {
             const state = await getGameState();
             setGameState(state);
-            generateNewQuestion(state.currentLevel);
+            generateNewQuestion(state.currentLevel, state.lastQuestionTypes);
         };
         init();
     }, []);
 
-    const generateNewQuestion = (level: number) => {
-        const newQuestion = generateQuestion(level);
+    const generateNewQuestion = (level: number, lastQuestions: Operator[]) => {
+        const newQuestion = generateQuestion(level, lastQuestions);
         setQuestion(newQuestion);
         setStartTime(Date.now());
         setFeedback(null);
@@ -38,7 +40,14 @@ export default function GamePage() {
         const isCorrect = choice === question.correctAnswer;
 
         const newStreak = isCorrect ? gameState.currentStreak + 1 : 0;
-        const score = calculateScore(isCorrect, responseTime, question.difficulty, newStreak);
+        const newOperatorsUsed = new Set(gameState.uniqueOperatorsUsed).add(question.operator);
+        const score = calculateScore(
+            isCorrect,
+            responseTime,
+            question.difficulty,
+            newStreak,
+            newOperatorsUsed.size
+        );
 
         const newState = await updateGameState({
             score: gameState.score + score,
@@ -48,7 +57,11 @@ export default function GamePage() {
                 (gameState.averageResponseTime * gameState.questionsAnswered + responseTime) /
                 (gameState.questionsAnswered + 1),
             currentStreak: newStreak,
-            maxStreak: Math.max(gameState.maxStreak, newStreak)
+            maxStreak: Math.max(gameState.maxStreak, newStreak),
+            sessionQuestionsAnswered: gameState.sessionQuestionsAnswered + 1,
+            sessionCorrectAnswers: gameState.sessionCorrectAnswers + (isCorrect ? 1 : 0),
+            uniqueOperatorsUsed: newOperatorsUsed,
+            lastQuestionTypes: [...gameState.lastQuestionTypes, question.operator].slice(-5),
         });
 
         setGameState(newState);
@@ -57,14 +70,44 @@ export default function GamePage() {
             isCorrect
         });
 
-        if (shouldLevelUp(newState.correctAnswers, newState.questionsAnswered, newState.averageResponseTime)) {
+        if (isSessionComplete(newState.sessionQuestionsAnswered)) {
+            const rewards = calculateSessionRewards(newState);
+            setSessionRewards(rewards);
+            setSessionComplete(true);
+            await updateGameState({
+                stars: gameState.stars + rewards.stars,
+                sessionQuestionsAnswered: 0,
+                sessionCorrectAnswers: 0,
+                uniqueOperatorsUsed: new Set([]),
+                lifetimeScore: gameState.lifetimeScore + gameState.score,
+                score: 0,  // Reset session score
+            });
+        } else if (shouldLevelUp(newState)) {
             setIsLevelUp(true);
             await updateGameState({ currentLevel: gameState.currentLevel + 1 });
+        } else if (shouldReduceDifficulty(newState)) {
+            const newLevel = Math.max(1, gameState.currentLevel - 1);
+            await updateGameState({ currentLevel: newLevel });
+            setTimeout(() => {
+                generateNewQuestion(newLevel, newState.lastQuestionTypes);
+            }, 1500);
         } else {
             setTimeout(() => {
-                generateNewQuestion(newState.currentLevel);
+                generateNewQuestion(newState.currentLevel, newState.lastQuestionTypes);
             }, 1500);
         }
+    };
+
+    const handleReset = async () => {
+        await resetGameState();
+        const state = await getGameState();
+        setGameState(state);
+        setQuestion(null);
+        setFeedback(null);
+        setIsLevelUp(false);
+        setSessionComplete(false);
+        setSessionRewards(null);
+        generateNewQuestion(1, []);
     };
 
     const getProgressHints = () => {
@@ -84,17 +127,17 @@ export default function GamePage() {
                     <div>
                         <div className="flex justify-between items-center">
                             <span>Accuracy:</span>
-                            <span className={accuracyNum >= 80 ? 'text-green-500' : 'text-blue-500'}>
+                            <span className={accuracyNum >= 60 ? 'text-green-500' : 'text-blue-500'}>
                                 {accuracy}%
                             </span>
                         </div>
                         <div className="h-1 bg-gray-200 rounded-full mt-1">
                             <div
-                                className={`h-full rounded-full ${accuracyNum >= 80 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                className={`h-full rounded-full ${accuracyNum >= 60 ? 'bg-green-500' : 'bg-blue-500'}`}
                                 style={{ width: `${Math.min(100, accuracyNum)}%` }}
                             />
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">Need: 80%</div>
+                        <div className="text-xs text-gray-500 mt-1">Need: 60%</div>
                     </div>
                     <div>
                         <div className="flex justify-between items-center">
@@ -112,8 +155,9 @@ export default function GamePage() {
                         <div className="text-xs text-gray-500 mt-1">Need: &lt;5s</div>
                     </div>
                 </div>
-                <div className="text-sm text-gray-600 mt-2">
-                    Questions: {gameState.questionsAnswered}/10
+                <div className="flex justify-between items-center text-sm text-gray-600 mt-2">
+                    <span>Session: {gameState.sessionQuestionsAnswered}/20</span>
+                    <span>⭐ {gameState.stars}</span>
                 </div>
             </div>
         );
@@ -132,8 +176,18 @@ export default function GamePage() {
                         <ArrowLeftIcon className="w-5 h-5 mr-1" />
                         Back
                     </Link>
-                    <div className="flex gap-4">
-                        <div className="text-lg font-medium">Score: {gameState.score}</div>
+                    <div className="flex items-center gap-4">
+                        <div className="flex flex-col items-end">
+                            <div className="text-lg font-medium">Score: {gameState.score}</div>
+                            <div className="text-sm text-gray-600">Total: {gameState.lifetimeScore}</div>
+                        </div>
+                        <button
+                            onClick={handleReset}
+                            className="flex items-center gap-1 px-3 py-1 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                            <ArrowPathIcon className="w-4 h-4" />
+                            Reset
+                        </button>
                     </div>
                 </div>
 
@@ -164,10 +218,10 @@ export default function GamePage() {
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className={`p-6 text-2xl font-bold rounded-lg ${feedback
-                                        ? choice === question.correctAnswer
-                                            ? 'bg-green-500 text-white'
-                                            : 'bg-gray-100 text-gray-700'
-                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                    ? choice === question.correctAnswer
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-gray-100 text-gray-700'
+                                    : 'bg-blue-500 text-white hover:bg-blue-600'
                                     }`}
                                 onClick={() => handleAnswer(choice)}
                                 disabled={!!feedback}
@@ -177,6 +231,33 @@ export default function GamePage() {
                         ))}
                     </div>
                 </div>
+
+                {sessionComplete && sessionRewards && (
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+                    >
+                        <div className="bg-white p-8 rounded-lg text-center w-full max-w-sm">
+                            <h2 className="text-2xl font-bold mb-4">Session Complete!</h2>
+                            <p className="text-4xl mb-4">
+                                {'🌟'.repeat(sessionRewards.stars)}
+                            </p>
+                            <p className="mb-2">{sessionRewards.message}</p>
+                            <p className="mb-6 text-gray-600">Session Score: {gameState.score}</p>
+                            <button
+                                className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg"
+                                onClick={() => {
+                                    setSessionComplete(false);
+                                    setSessionRewards(null);
+                                    generateNewQuestion(gameState.currentLevel, gameState.lastQuestionTypes);
+                                }}
+                            >
+                                Start New Session
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
 
                 {isLevelUp && (
                     <motion.div
@@ -191,7 +272,7 @@ export default function GamePage() {
                                 className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg"
                                 onClick={() => {
                                     setIsLevelUp(false);
-                                    generateNewQuestion(gameState.currentLevel + 1);
+                                    generateNewQuestion(gameState.currentLevel + 1, gameState.lastQuestionTypes);
                                 }}
                             >
                                 Continue
