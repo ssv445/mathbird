@@ -88,9 +88,7 @@ export default function GamePage() {
                 lifetimeScore: gameState.lifetimeScore + gameState.score,
                 score: 0,
                 averageResponseTime: 0,
-                ...(shouldAdvanceLevel ? {
-                    currentLevel: gameState.currentLevel + 1,
-                } : {}),
+                currentLevel: shouldAdvanceLevel ? gameState.currentLevel + 1 : gameState.currentLevel,
             });
 
             setGameState(updatedState);
@@ -264,10 +262,10 @@ export default function GamePage() {
                                 {'⭐'.repeat(sessionRewards.stars)}
                             </p>
                             <p className="mb-2">{sessionRewards.message}</p>
-                            <p className="mb-2 text-gray-600">Accuracy: {((gameState.sessionCorrectAnswers / gameState.sessionQuestionsAnswered) * 100).toFixed(1)}%</p>
+                            <p className="mb-2 text-gray-600">Accuracy: {gameState.sessionQuestionsAnswered > 0 ? ((gameState.sessionCorrectAnswers / gameState.sessionQuestionsAnswered) * 100).toFixed(1) : '0'}%</p>
                             {isLevelUp && (
                                 <p className="mb-2 text-green-600 font-medium">
-                                    Advanced to Level {gameState.currentLevel + 1}! 🎉
+                                    Advanced to Level {gameState.currentLevel}! 🎉
                                 </p>
                             )}
                             <p className="mb-6 text-gray-600">Session Score: {gameState.score}</p>
