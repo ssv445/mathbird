@@ -93,6 +93,7 @@ export default function GamePage() {
         if (isSessionComplete(newState.sessionQuestionsAnswered)) {
             const rewards = calculateSessionRewards(newState);
             const shouldAdvanceLevel = shouldLevelUp(newState);
+            const accuracy = (newState.sessionCorrectAnswers / newState.sessionQuestionsAnswered) * 100;
 
             // Store all necessary data in localStorage
             localStorage.setItem('sessionData', JSON.stringify({
@@ -100,6 +101,7 @@ export default function GamePage() {
                 stars: rewards.stars,
                 message: rewards.message,
                 score: gameState.score,
+                accuracy: accuracy,
                 pendingUpdate: {
                     stars: gameState.stars + rewards.stars,
                     lifetimeScore: gameState.lifetimeScore + gameState.score,
@@ -107,8 +109,12 @@ export default function GamePage() {
                 }
             }));
 
-            // Immediate redirect using Next.js router
-            router.replace('/level-complete');
+            // Redirect to appropriate page based on performance
+            if (accuracy < config.levelUp.minAccuracyForReduction) {
+                router.replace('/level-repeat');
+            } else {
+                router.replace('/level-complete');
+            }
         } else if (shouldReduceDifficulty(newState)) {
             const newLevel = Math.max(1, gameState.currentLevel - 1);
             await updateGameState({
