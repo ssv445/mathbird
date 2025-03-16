@@ -93,8 +93,11 @@ export default function LevelCompletePage() {
 
                     <motion.div
                         initial={{ scale: 0 }}
-                        animate={{ scale: [0, 1.2, 1] }}
-                        transition={{ duration: 0.5 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                            type: "spring",
+                            bounce: 0.5
+                        }}
                         className="text-6xl mb-8"
                     >
                         {Array.from({ length: sessionData.stars }).map((_, i) => (
@@ -137,8 +140,12 @@ export default function LevelCompletePage() {
                         {sessionData.isLevelUp && (
                             <motion.p
                                 initial={{ scale: 0 }}
-                                animate={{ scale: [0, 1.2, 1] }}
-                                transition={{ delay: 1, type: "spring" }}
+                                animate={{ scale: 1 }}
+                                transition={{
+                                    type: "spring",
+                                    bounce: 0.5,
+                                    delay: 1
+                                }}
                                 className="text-2xl text-green-600 font-medium"
                             >
                                 Advanced to Level {sessionData.pendingUpdate.currentLevel}! 🎉

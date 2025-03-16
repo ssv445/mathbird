@@ -244,11 +244,16 @@ export default function GamePage() {
                             >
                                 <motion.div
                                     animate={feedback.isCorrect ? {
-                                        scale: [1, 1.2, 1],
-                                        rotate: [0, 10, -10, 0]
+                                        scale: 1.1,
+                                        rotate: 5
                                     } : {
-                                        x: [0, -10, 10, -10, 10, 0],
-                                        transition: { duration: 0.5 }
+                                        x: [-10, 10]
+                                    }}
+                                    transition={{
+                                        duration: 0.5,
+                                        type: feedback.isCorrect ? "spring" : "tween",
+                                        repeat: feedback.isCorrect ? 1 : 3,
+                                        repeatType: "reverse"
                                     }}
                                 >
                                     {feedback.message}
