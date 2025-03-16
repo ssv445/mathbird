@@ -14,9 +14,6 @@ export default function GamePage() {
     const [question, setQuestion] = useState<Question | null>(null);
     const [startTime, setStartTime] = useState<number>(0);
     const [feedback, setFeedback] = useState<{ message: string; isCorrect: boolean } | null>(null);
-    const [isLevelUp, setIsLevelUp] = useState(false);
-    const [sessionComplete, setSessionComplete] = useState(false);
-    const [sessionRewards, setSessionRewards] = useState<{ stars: number; message: string } | null>(null);
 
     useEffect(() => {
         const init = async () => {
@@ -76,10 +73,8 @@ export default function GamePage() {
 
         if (isSessionComplete(newState.sessionQuestionsAnswered)) {
             const rewards = calculateSessionRewards(newState);
-            setSessionRewards(rewards);
-            setSessionComplete(true);
-
             const shouldAdvanceLevel = shouldLevelUp(newState);
+
             const updatedState = await updateGameState({
                 stars: gameState.stars + rewards.stars,
                 sessionQuestionsAnswered: 0,
@@ -93,9 +88,18 @@ export default function GamePage() {
 
             setGameState(updatedState);
 
-            if (shouldAdvanceLevel) {
-                setIsLevelUp(true);
-            }
+            // Store session data in localStorage
+            localStorage.setItem('sessionData', JSON.stringify({
+                isLevelUp: shouldAdvanceLevel,
+                stars: rewards.stars,
+                message: rewards.message,
+                score: gameState.score
+            }));
+
+            // Redirect to level complete page after a short delay
+            setTimeout(() => {
+                window.location.href = '/level-complete';
+            }, 1000);
         } else if (shouldReduceDifficulty(newState)) {
             const newLevel = Math.max(1, gameState.currentLevel - 1);
             await updateGameState({
@@ -120,9 +124,6 @@ export default function GamePage() {
         setGameState(state);
         setQuestion(null);
         setFeedback(null);
-        setIsLevelUp(false);
-        setSessionComplete(false);
-        setSessionRewards(null);
         generateNewQuestion(1, []);
     };
 
@@ -247,42 +248,6 @@ export default function GamePage() {
                         ))}
                     </div>
                 </div>
-
-                {sessionComplete && sessionRewards && (
-                    <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-                    >
-                        <div className="bg-white p-8 rounded-lg text-center w-full max-w-sm">
-                            <h2 className="text-2xl font-bold mb-4">
-                                {isLevelUp ? 'Level Up!' : 'Session Complete!'}
-                            </h2>
-                            <p className="text-4xl mb-4">
-                                {'⭐'.repeat(sessionRewards.stars)}
-                            </p>
-                            <p className="mb-2">{sessionRewards.message}</p>
-                            <p className="mb-2 text-gray-600">Accuracy: {gameState.sessionQuestionsAnswered > 0 ? ((gameState.sessionCorrectAnswers / gameState.sessionQuestionsAnswered) * 100).toFixed(1) : '0'}%</p>
-                            {isLevelUp && (
-                                <p className="mb-2 text-green-600 font-medium">
-                                    Advanced to Level {gameState.currentLevel}! 🎉
-                                </p>
-                            )}
-                            <p className="mb-6 text-gray-600">Session Score: {gameState.score}</p>
-                            <button
-                                className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg hover:bg-blue-600 transition-colors"
-                                onClick={async () => {
-                                    setSessionComplete(false);
-                                    setSessionRewards(null);
-                                    setIsLevelUp(false);
-                                    generateNewQuestion(gameState.currentLevel, gameState.lastQuestionTypes);
-                                }}
-                            >
-                                Continue
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
             </div>
         </main>
     );
