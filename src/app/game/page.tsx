@@ -75,25 +75,17 @@ export default function GamePage() {
             const rewards = calculateSessionRewards(newState);
             const shouldAdvanceLevel = shouldLevelUp(newState);
 
-            const updatedState = await updateGameState({
-                stars: gameState.stars + rewards.stars,
-                sessionQuestionsAnswered: 0,
-                sessionCorrectAnswers: 0,
-                uniqueOperatorsUsed: new Set([]),
-                lifetimeScore: gameState.lifetimeScore + gameState.score,
-                score: 0,
-                averageResponseTime: 0,
-                currentLevel: shouldAdvanceLevel ? gameState.currentLevel + 1 : gameState.currentLevel,
-            });
-
-            setGameState(updatedState);
-
-            // Store session data in localStorage
+            // Store all necessary data in localStorage
             localStorage.setItem('sessionData', JSON.stringify({
                 isLevelUp: shouldAdvanceLevel,
                 stars: rewards.stars,
                 message: rewards.message,
-                score: gameState.score
+                score: gameState.score,
+                pendingUpdate: {
+                    stars: gameState.stars + rewards.stars,
+                    lifetimeScore: gameState.lifetimeScore + gameState.score,
+                    currentLevel: shouldAdvanceLevel ? gameState.currentLevel + 1 : gameState.currentLevel
+                }
             }));
 
             // Redirect to level complete page after a short delay

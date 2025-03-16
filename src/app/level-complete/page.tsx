@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { getGameState } from '@/lib/store';
+import { getGameState, updateGameState } from '@/lib/store';
 import { GameState } from '@/lib/types';
 
 export default function LevelCompletePage() {
@@ -14,6 +14,11 @@ export default function LevelCompletePage() {
         stars: number;
         message: string;
         score: number;
+        pendingUpdate: {
+            stars: number;
+            lifetimeScore: number;
+            currentLevel: number;
+        };
     } | null>(null);
 
     useEffect(() => {
@@ -25,7 +30,6 @@ export default function LevelCompletePage() {
             const data = localStorage.getItem('sessionData');
             if (data) {
                 setSessionData(JSON.parse(data));
-                localStorage.removeItem('sessionData'); // Clear after reading
             } else {
                 // If no data, redirect back to game
                 router.push('/game');
@@ -33,6 +37,28 @@ export default function LevelCompletePage() {
         };
         init();
     }, [router]);
+
+    const handleContinue = async () => {
+        if (!sessionData) return;
+
+        // Apply the pending state update
+        await updateGameState({
+            stars: sessionData.pendingUpdate.stars,
+            sessionQuestionsAnswered: 0,
+            sessionCorrectAnswers: 0,
+            uniqueOperatorsUsed: new Set([]),
+            lifetimeScore: sessionData.pendingUpdate.lifetimeScore,
+            score: 0,
+            averageResponseTime: 0,
+            currentLevel: sessionData.pendingUpdate.currentLevel,
+        });
+
+        // Clear the session data
+        localStorage.removeItem('sessionData');
+
+        // Navigate back to game
+        router.push('/game');
+    };
 
     if (!gameState || !sessionData) return <div>Loading...</div>;
 
@@ -63,13 +89,13 @@ export default function LevelCompletePage() {
 
                         {sessionData.isLevelUp && (
                             <p className="text-2xl text-green-600 font-medium">
-                                Advanced to Level {gameState.currentLevel}! 🎉
+                                Advanced to Level {sessionData.pendingUpdate.currentLevel}! 🎉
                             </p>
                         )}
 
                         <div className="text-gray-600">
                             <p className="text-lg">Session Score: {sessionData.score}</p>
-                            <p className="text-sm">Total Score: {gameState.lifetimeScore}</p>
+                            <p className="text-sm">Total Score: {sessionData.pendingUpdate.lifetimeScore}</p>
                         </div>
                     </div>
 
@@ -77,7 +103,7 @@ export default function LevelCompletePage() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className="bg-blue-500 text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-blue-600 transition-colors w-full"
-                        onClick={() => router.push('/game')}
+                        onClick={handleContinue}
                     >
                         Continue Playing
                     </motion.button>
