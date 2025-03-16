@@ -7,8 +7,10 @@ import { Question, GameState, Operator } from '@/lib/types';
 import { generateQuestion, calculateScore, shouldLevelUp, shouldReduceDifficulty, isSessionComplete, calculateSessionRewards } from '@/lib/game';
 import { getGameState, updateGameState, resetGameState } from '@/lib/store';
 import { config } from '@/lib/config';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { playSound } from '@/lib/sounds';
+import confetti from 'canvas-confetti';
 
 export default function GamePage() {
     const router = useRouter();
@@ -39,8 +41,20 @@ export default function GamePage() {
     const handleAnswer = async (choice: number) => {
         if (!question || !gameState || feedback) return;
 
+        playSound('click');
         const responseTime = Date.now() - startTime;
         const isCorrect = choice === question.correctAnswer;
+
+        if (isCorrect) {
+            playSound('correct');
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        } else {
+            playSound('wrong');
+        }
 
         const feedbackMessage = isCorrect ? 'Correct!' : getEncouragingFeedback(question);
 
@@ -205,42 +219,72 @@ export default function GamePage() {
 
                 <div className="flex-1" /> {/* Spacer */}
 
-                <div className="bg-white rounded-lg shadow-lg p-6">
-                    <div className="text-3xl font-bold text-center mb-6">
-                        {question.operand1} {question.operator} {question.operand2} = ?
-                    </div>
-
-                    {feedback && (
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={question.id}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="bg-white rounded-lg shadow-lg p-6"
+                    >
                         <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className={`text-xl font-bold text-center mb-4 ${feedback.isCorrect ? 'text-green-500' : 'text-red-500'
-                                }`}
+                            className="text-3xl font-bold text-center mb-6"
+                            initial={{ y: -20 }}
+                            animate={{ y: 0 }}
                         >
-                            {feedback.message}
+                            {question.operand1} {question.operator} {question.operand2} = ?
                         </motion.div>
-                    )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {question.choices.map((choice, index) => (
-                            <motion.button
-                                key={index}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className={`p-6 text-2xl font-bold rounded-lg ${feedback
-                                    ? choice === question.correctAnswer
-                                        ? 'bg-green-500 text-white'
-                                        : 'bg-gray-100 text-gray-700'
-                                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                        {feedback && (
+                            <motion.div
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className={`text-xl font-bold text-center mb-4 ${feedback.isCorrect ? 'text-green-500' : 'text-red-500'
                                     }`}
-                                onClick={() => handleAnswer(choice)}
-                                disabled={!!feedback}
                             >
-                                {choice}
-                            </motion.button>
-                        ))}
-                    </div>
-                </div>
+                                <motion.div
+                                    animate={feedback.isCorrect ? {
+                                        scale: [1, 1.2, 1],
+                                        rotate: [0, 10, -10, 0]
+                                    } : {
+                                        x: [0, -10, 10, -10, 10, 0],
+                                        transition: { duration: 0.5 }
+                                    }}
+                                >
+                                    {feedback.message}
+                                    {feedback.isCorrect && (
+                                        <span className="ml-2" role="img" aria-label="celebration">
+                                            {['🌟', '⭐', '✨', '🎉'][Math.floor(Math.random() * 4)]}
+                                        </span>
+                                    )}
+                                </motion.div>
+                            </motion.div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            {question.choices.map((choice, index) => (
+                                <motion.button
+                                    key={index}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className={`p-6 text-2xl font-bold rounded-lg ${feedback
+                                        ? choice === question.correctAnswer
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-gray-100 text-gray-700'
+                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                        }`}
+                                    onClick={() => handleAnswer(choice)}
+                                    disabled={!!feedback}
+                                >
+                                    {choice}
+                                </motion.button>
+                            ))}
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
             </div>
         </main>
     );

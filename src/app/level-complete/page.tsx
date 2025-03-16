@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { getGameState, updateGameState } from '@/lib/store';
 import { GameState } from '@/lib/types';
+import { playSound } from '@/lib/sounds';
+import confetti from 'canvas-confetti';
 
 export default function LevelCompletePage() {
     const router = useRouter();
@@ -25,6 +27,16 @@ export default function LevelCompletePage() {
         const init = async () => {
             const state = await getGameState();
             setGameState(state);
+
+            // Play level up sound and trigger confetti
+            playSound('levelUp');
+            confetti({
+                particleCount: 200,
+                spread: 100,
+                origin: { y: 0.3 },
+                gravity: 0.5,
+                scalar: 1.2
+            });
 
             // Prefetch the game page for faster return
             router.prefetch('/game');
@@ -71,34 +83,73 @@ export default function LevelCompletePage() {
                     animate={{ scale: 1, opacity: 1 }}
                     className="bg-white p-8 rounded-lg text-center shadow-lg"
                 >
-                    <h1 className="text-4xl font-bold mb-8">
+                    <motion.h1
+                        initial={{ y: -50 }}
+                        animate={{ y: 0 }}
+                        className="text-4xl font-bold mb-8"
+                    >
                         {sessionData.isLevelUp ? 'Level Up!' : 'Session Complete!'}
-                    </h1>
+                    </motion.h1>
 
-                    <div className="text-6xl mb-8 animate-bounce">
-                        {'⭐'.repeat(sessionData.stars)}
-                    </div>
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: [0, 1.2, 1] }}
+                        transition={{ duration: 0.5 }}
+                        className="text-6xl mb-8"
+                    >
+                        {Array.from({ length: sessionData.stars }).map((_, i) => (
+                            <motion.span
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.2 }}
+                                className="inline-block animate-bounce"
+                                style={{ animationDelay: `${i * 0.1}s` }}
+                            >
+                                ⭐
+                            </motion.span>
+                        ))}
+                    </motion.div>
 
-                    <p className="text-xl mb-6">{sessionData.message}</p>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="text-xl mb-6"
+                    >
+                        {sessionData.message}
+                    </motion.p>
 
-                    <div className="space-y-4 mb-8">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.7 }}
+                        className="space-y-4 mb-8"
+                    >
                         <div className="text-gray-600">
-                            <p className="text-lg">Accuracy: {gameState.sessionQuestionsAnswered > 0 ?
-                                ((gameState.sessionCorrectAnswers / gameState.sessionQuestionsAnswered) * 100).toFixed(1) : '0'}%
+                            <p className="text-lg">
+                                Accuracy: {gameState.sessionQuestionsAnswered > 0
+                                    ? ((gameState.sessionCorrectAnswers / gameState.sessionQuestionsAnswered) * 100).toFixed(1)
+                                    : '0'}%
                             </p>
                         </div>
 
                         {sessionData.isLevelUp && (
-                            <p className="text-2xl text-green-600 font-medium">
+                            <motion.p
+                                initial={{ scale: 0 }}
+                                animate={{ scale: [0, 1.2, 1] }}
+                                transition={{ delay: 1, type: "spring" }}
+                                className="text-2xl text-green-600 font-medium"
+                            >
                                 Advanced to Level {sessionData.pendingUpdate.currentLevel}! 🎉
-                            </p>
+                            </motion.p>
                         )}
 
                         <div className="text-gray-600">
                             <p className="text-lg">Session Score: {sessionData.score}</p>
                             <p className="text-sm">Total Score: {sessionData.pendingUpdate.lifetimeScore}</p>
                         </div>
-                    </div>
+                    </motion.div>
 
                     <motion.button
                         whileHover={{ scale: 1.05 }}
