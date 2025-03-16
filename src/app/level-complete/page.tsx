@@ -26,13 +26,16 @@ export default function LevelCompletePage() {
             const state = await getGameState();
             setGameState(state);
 
+            // Prefetch the game page for faster return
+            router.prefetch('/game');
+
             // Get session data from localStorage
             const data = localStorage.getItem('sessionData');
             if (data) {
                 setSessionData(JSON.parse(data));
             } else {
                 // If no data, redirect back to game
-                router.push('/game');
+                router.replace('/game');
             }
         };
         init();
@@ -53,11 +56,9 @@ export default function LevelCompletePage() {
             currentLevel: sessionData.pendingUpdate.currentLevel,
         });
 
-        // Clear the session data
+        // Clear the session data and redirect
         localStorage.removeItem('sessionData');
-
-        // Navigate back to game
-        router.push('/game');
+        router.replace('/game');
     };
 
     if (!gameState || !sessionData) return <div>Loading...</div>;

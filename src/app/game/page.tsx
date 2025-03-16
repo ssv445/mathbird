@@ -8,21 +8,26 @@ import { generateQuestion, calculateScore, shouldLevelUp, shouldReduceDifficulty
 import { getGameState, updateGameState, resetGameState } from '@/lib/store';
 import { config } from '@/lib/config';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 export default function GamePage() {
+    const router = useRouter();
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [question, setQuestion] = useState<Question | null>(null);
     const [startTime, setStartTime] = useState<number>(0);
     const [feedback, setFeedback] = useState<{ message: string; isCorrect: boolean } | null>(null);
 
     useEffect(() => {
+        // Prefetch the level-complete page
+        router.prefetch('/level-complete');
+
         const init = async () => {
             const state = await getGameState();
             setGameState(state);
             generateNewQuestion(state.currentLevel, state.lastQuestionTypes);
         };
         init();
-    }, []);
+    }, [router]);
 
     const generateNewQuestion = (level: number, lastQuestions: Operator[]) => {
         const newQuestion = generateQuestion(level, lastQuestions);
@@ -88,10 +93,8 @@ export default function GamePage() {
                 }
             }));
 
-            // Redirect to level complete page after a short delay
-            setTimeout(() => {
-                window.location.href = '/level-complete';
-            }, 1000);
+            // Immediate redirect using Next.js router
+            router.replace('/level-complete');
         } else if (shouldReduceDifficulty(newState)) {
             const newLevel = Math.max(1, gameState.currentLevel - 1);
             await updateGameState({
@@ -100,13 +103,11 @@ export default function GamePage() {
                 sessionCorrectAnswers: 0,
                 averageResponseTime: 0,
             });
-            setTimeout(() => {
-                generateNewQuestion(newLevel, newState.lastQuestionTypes);
-            }, 1500);
+            generateNewQuestion(newLevel, newState.lastQuestionTypes);
         } else {
             setTimeout(() => {
                 generateNewQuestion(newState.currentLevel, newState.lastQuestionTypes);
-            }, 1500);
+            }, 1000);
         }
     };
 
