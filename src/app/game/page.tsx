@@ -167,8 +167,8 @@ export default function GamePage() {
             `Almost! ${question.operand1} ${question.operator} ${question.operand2} = ${question.correctAnswer}`,
             "You can do it! Try again!",
             "Keep going! Practice makes perfect!",
-            "Not quite, but you&apos;re learning!",
-            "That&apos;s okay! Math takes time to master."
+            "Not quite, but you're learning!",
+            "That's okay! Math takes time to master."
         ];
         return messages[Math.floor(Math.random() * messages.length)];
     };
