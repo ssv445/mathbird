@@ -256,42 +256,27 @@ export default function GamePage() {
                         className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
                     >
                         <div className="bg-white p-8 rounded-lg text-center w-full max-w-sm">
-                            <h2 className="text-2xl font-bold mb-4">Session Complete!</h2>
+                            <h2 className="text-2xl font-bold mb-4">
+                                {isLevelUp ? 'Level Up!' : 'Session Complete!'}
+                            </h2>
                             <p className="text-4xl mb-4">
                                 {'⭐'.repeat(sessionRewards.stars)}
                             </p>
                             <p className="mb-2">{sessionRewards.message}</p>
                             <p className="mb-2 text-gray-600">Accuracy: {((gameState.sessionCorrectAnswers / gameState.sessionQuestionsAnswered) * 100).toFixed(1)}%</p>
-                            <p className="mb-2 text-gray-600">Level: {gameState.currentLevel}</p>
+                            {isLevelUp && (
+                                <p className="mb-2 text-green-600 font-medium">
+                                    Advanced to Level {gameState.currentLevel + 1}! 🎉
+                                </p>
+                            )}
                             <p className="mb-6 text-gray-600">Session Score: {gameState.score}</p>
                             <button
                                 className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg hover:bg-blue-600 transition-colors"
                                 onClick={async () => {
                                     setSessionComplete(false);
                                     setSessionRewards(null);
-                                    generateNewQuestion(gameState.currentLevel, gameState.lastQuestionTypes);
-                                }}
-                            >
-                                Continue
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
-                {isLevelUp && (
-                    <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-                    >
-                        <div className="bg-white p-8 rounded-lg text-center w-full max-w-sm">
-                            <h2 className="text-2xl font-bold mb-4">Level Up!</h2>
-                            <p className="mb-4">You&apos;ve advanced to level {gameState.currentLevel + 1}</p>
-                            <button
-                                className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full text-lg hover:bg-blue-600 transition-colors"
-                                onClick={() => {
                                     setIsLevelUp(false);
-                                    generateNewQuestion(gameState.currentLevel + 1, gameState.lastQuestionTypes);
+                                    generateNewQuestion(gameState.currentLevel, gameState.lastQuestionTypes);
                                 }}
                             >
                                 Continue
