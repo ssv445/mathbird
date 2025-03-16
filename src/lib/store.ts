@@ -1,5 +1,6 @@
 import { openDB, IDBPDatabase } from 'idb';
 import { GameState } from './types';
+import { config } from './config';
 
 const DB_NAME = 'mathbird';
 const STORE_NAME = 'gameState';
@@ -8,7 +9,7 @@ const initialState: GameState = {
     currentLevel: 1,
     score: 0,
     lifetimeScore: 0,
-    questionsAnswered: 0,
+    questionsAnswered: config.session.questionsPerSession,
     correctAnswers: 0,
     averageResponseTime: 0,
     currentStreak: 0,

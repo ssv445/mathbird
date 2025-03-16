@@ -6,6 +6,7 @@ import { ArrowLeftIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Question, GameState, Operator } from '@/lib/types';
 import { generateQuestion, calculateScore, shouldLevelUp, shouldReduceDifficulty, isSessionComplete, calculateSessionRewards } from '@/lib/game';
 import { getGameState, updateGameState, resetGameState } from '@/lib/store';
+import { config } from '@/lib/config';
 import { motion } from 'framer-motion';
 
 export default function GamePage() {
@@ -142,27 +143,27 @@ export default function GamePage() {
                     <div>
                         <div className="flex justify-between items-center">
                             <span>Accuracy:</span>
-                            <span className={accuracyNum >= 60 ? 'text-green-500' : 'text-blue-500'}>
+                            <span className={accuracyNum >= config.levelUp.minAccuracy ? 'text-green-500' : 'text-blue-500'}>
                                 {accuracy}%
                             </span>
                         </div>
                         <div className="h-1 bg-gray-200 rounded-full mt-1">
                             <div
-                                className={`h-full rounded-full ${accuracyNum >= 60 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                className={`h-full rounded-full ${accuracyNum >= config.levelUp.minAccuracy ? 'bg-green-500' : 'bg-blue-500'}`}
                                 style={{ width: `${Math.min(100, accuracyNum)}%` }}
                             />
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">Need: 60% for next level</div>
+                        <div className="text-xs text-gray-500 mt-1">Need: {config.levelUp.minAccuracy}% for next level</div>
                     </div>
                 </div>
                 <div className="flex justify-between items-center text-sm text-gray-600 mt-2">
-                    <span>Questions: {gameState.sessionQuestionsAnswered}/20</span>
+                    <span>Questions: {gameState.sessionQuestionsAnswered}/{config.session.questionsPerSession}</span>
                     <span>⭐ {gameState.stars}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                     <div
                         className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${(gameState.sessionQuestionsAnswered / 20) * 100}%` }}
+                        style={{ width: `${(gameState.sessionQuestionsAnswered / config.session.questionsPerSession) * 100}%` }}
                     />
                 </div>
             </div>
